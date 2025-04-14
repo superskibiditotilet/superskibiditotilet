@@ -1,0 +1,161 @@
+-- Kiểm tra và xóa GUI cũ nếu tồn tại
+if game.CoreGui:FindFirstChild("SkibidiGUI") then
+    game.CoreGui.SkibidiGUI:Destroy()
+end
+
+-- Tạo GUI mới
+local gui = Instance.new("ScreenGui", game.CoreGui)
+gui.Name = "SkibidiGUI"
+gui.ResetOnSpawn = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- Âm thanh khi tải
+local loadSound = Instance.new("Sound", gui)
+loadSound.SoundId = "rbxassetid://13718787047"
+loadSound.Volume = 1
+loadSound:Play()
+
+-- Âm thanh khi nhấn
+local clickSound = Instance.new("Sound", gui)
+clickSound.SoundId = "rbxassetid://13718785741"
+clickSound.Volume = 1
+
+-- Tạo Frame
+local frame = Instance.new("Frame", gui)
+frame.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+frame.BackgroundTransparency = 0.4
+frame.Size = UDim2.new(0, 180, 0, 180)
+frame.Position = UDim2.new(0, 100, 0, 200)
+frame.BorderSizePixel = 0
+frame.AnchorPoint = Vector2.new(0.5, 0.5)
+
+-- Nút hình ảnh
+local button = Instance.new("ImageButton", frame)
+button.Size = UDim2.new(1, 0, 1, 0)
+button.Image = "rbxassetid://120636588608678"
+button.BackgroundTransparency = 1
+
+-- Nhãn trạng thái
+local label = Instance.new("TextLabel", frame)
+label.Size = UDim2.new(1, 0, 0, 30)
+label.Position = UDim2.new(0, 0, 1, -30)
+label.BackgroundTransparency = 1
+label.Text = "Team Skibidi Cat\n[ON]"
+label.Font = Enum.Font.FredokaOne
+label.TextColor3 = Color3.fromRGB(255, 255, 255)
+label.TextScaled = true
+label.TextWrapped = true
+
+-- Các biến
+local toggle = true
+local dragging = false
+local holdStart = nil
+
+-- Dịch vụ
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Debris = game:GetService("Debris")
+local player = Players.LocalPlayer
+local mouse = player:GetMouse()
+
+-- Kéo GUI
+local function dragGui(input)
+	local conn
+	local offset = input.Position
+	conn = RunService.RenderStepped:Connect(function()
+		local delta = UserInputService:GetMouseLocation() - offset
+		frame.Position = UDim2.new(0, delta.X, 0, delta.Y)
+	end)
+	input.Changed:Connect(function()
+		if input.UserInputState == Enum.UserInputState.End and conn then
+			conn:Disconnect()
+		end
+	end)
+end
+
+-- Tạo hitbox ảo để gây sát thương
+local function createFakeHitbox(target)
+	local part = Instance.new("Part", workspace)
+	part.Anchored = true
+	part.CanCollide = false
+	part.Size = Vector3.new(5, 5, 5)
+	part.Position = target:FindFirstChild("HumanoidRootPart").Position
+	part.Transparency = 1
+	part.Touched:Connect(function(hit)
+		if hit and hit.Parent:FindFirstChild("Humanoid") then
+			hit.Parent.Humanoid:TakeDamage(20)
+		end
+	end)
+	Debris:AddItem(part, 0.1)
+end
+
+-- Fast Attack loop
+local function rapidAttack()
+	while toggle do
+		local closestEnemy = nil
+		local shortestDistance = math.huge
+		for _, v in pairs(workspace:GetDescendants()) do
+			if v:IsA("Model") and v:FindFirstChild("Humanoid") and v ~= player.Character and v:FindFirstChild("HumanoidRootPart") then
+				local dist = (v.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
+				if dist < shortestDistance then
+					shortestDistance = dist
+					closestEnemy = v
+				end
+			end
+		end
+		if closestEnemy then
+			createFakeHitbox(closestEnemy)
+		end
+		task.wait(0.05)
+	end
+end
+
+-- Bỏ qua kỹ năng né đòn (Ken Haki)
+local function bypassDodge()
+	for _, func in pairs(getgc(true)) do
+		if typeof(func) == "function" and debug.getinfo(func).name == "CanDodge" then
+			hookfunction(func, function(...) return false end)
+		end
+	end
+end
+
+-- Sự kiện khi nhấn nút
+button.MouseButton1Down:Connect(function()
+	clickSound:Play()
+	holdStart = tick()
+	local held = true
+
+	task.delay(2, function()
+		if held and tick() - holdStart >= 2 then
+			dragging = true
+			dragGui(mouse)
+		end
+	end)
+
+	local grow = TweenService:Create(frame, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+		Size = UDim2.new(0, 270, 0, 270),
+		Rotation = 360
+	})
+	local shrink = TweenService:Create(frame, TweenInfo.new(0.2), {
+		Size = UDim2.new(0, 180, 0, 180),
+		Rotation = 0
+	})
+	grow:Play()
+	grow.Completed:Wait()
+	shrink:Play()
+
+	toggle = not toggle
+	label.Text = "Team Skibidi Cat\n" .. (toggle and "[ON]" or "[OFF]")
+
+	if toggle then
+		spawn(rapidAttack)
+		pcall(bypassDodge)
+	end
+end)
+
+button.MouseButton1Up:Connect(function()
+	holdStart = nil
+	dragging = false
+end)
