@@ -20,7 +20,7 @@ local function Notify(Title, Text, Duration)
     )
 end	
 
-Notify("Script Made By Sai", "My discord is: skondoooo92", 20)
+Notify(" Script làm bởi Scp Minh Bell dái bự ", "Facebook là SCP Minh Bell ", 20)
 
 local animation = Instance.new("Animation")
 animation.Name = "aaa"
