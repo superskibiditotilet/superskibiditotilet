@@ -29,7 +29,7 @@ animation.Parent = workspace
 animation.AnimationId = getmodel() == "R15" and "rbxassetid://698251653" or "rbxassetid://72042024"
 
 local tool = Instance.new("Tool")
-tool.Name = "Jerk"
+tool.Name = "[Rainbow] GodlyBlossom 100000Kg"
 tool.RequiresHandle = false
 tool.Parent = pack
 
